@@ -1,8 +1,8 @@
 # FAH_WrapperGPUTrajectory
 
 Please modify the source file with the hostnames
-1) where the wrapper is running
-2) where the FAHClient is running
+1. where the wrapper is running
+2. where the FAHClient is running
 
 Those both hostnames for the time beeing need to be the same !
 
