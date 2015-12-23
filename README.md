@@ -14,3 +14,6 @@ Then on a remote machine (or the same) start the viewer
 
 FAHViewer --connect=\<wrapper_hostname\>:36331 --password=\<password\> --slot=1
 
+Attention: right now not much more then a proof-of-concept ... still too many hardcoded assumptions like the working folder (always workunit 01); some effort to make it end-user-friendly to be done
+
+
