@@ -18,4 +18,6 @@ Then on a remote machine (or the same) start the viewer
 As result something like this should appear:
 ![FAH GPU trajectory](http://imageshack.us/a/img910/339/w1sh5j.jpg)
 
-Attention: right now not much more then a proof-of-concept ... still too many hardcoded assumptions like the working folder (always workunit 01); some effort to make it end-user-friendly to be done
+![FAH GPU trajectory](ttp://imageshack.com/a/img905/7480/JObdT1.png)
+
+Attention: right now not much more then a proof-of-concept ... still some work to be done ...
