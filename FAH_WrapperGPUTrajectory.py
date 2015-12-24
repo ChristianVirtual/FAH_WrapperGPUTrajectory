@@ -21,10 +21,14 @@
 #
 # 2014/10/14	1.0		initial version
 # 2014/10/14	1.1		removed some leftover from original purpose of the template 
-# 						(cnt % 100 and print of client list)
+# 						(cnt % 100 and log of client list)
 # 2015/12/23	1.2		make it a real wrapper with the goal to work with the official viewer
 #						the wrapper will intercept all traffic from the API-client to FAHClient
 #						and modify those messages related to trajectories
+# 2015/12/24	1.3		issue #2: fixed hardcoded location of folder (slot vs. unit)
+#    					issue #4: only one frame with positions is send back
+#   					issue #5: radius of atoms are not set correctly
+#						additional: replace prints with proper logging to increase version independance
 #
 #
 
@@ -55,6 +59,8 @@ import re
 import xml.etree.ElementTree as ET
 import json
 import os.path
+import logging
+import glob
 
 #
 # Adopt here the path pointing to your working directory from FAHClient
@@ -83,11 +89,15 @@ portWrapper = 36331
 hostnameClient = "linuxpowered"
 portClient = 36330
 
-workingPath = "/var/lib/fahclient/work/"
+workingPathLinux = "/var/lib/fahclient/work/"
+
+userNameWindows = ""
+workingPathWindows = "C:\Users\<user>\AppData\Roaming\FAHClient\work"
 
 atomList = []
 bondList = []
 
+mapFSWU = {}
 
 #
 # Atom-Object
@@ -118,7 +128,31 @@ class Bond(object):
             for attr in dir(Foo):
                 if not attr.startswith("__"):
                     yield attr
+
 	
+def printcopyrightandusage():
+    """ (c) Christian Lohmann, 2015, FAH_WrapperGPUTrajectory"""
+
+    print("(c) Christian Lohmann 2015") 
+    print("FAH_WrapperGPUTrajectory")
+    
+    LOG_FILENAME = 'fah_wrapgpu.log'
+
+    logging.basicConfig(format='%(asctime)s:%(message)s', datefmt='%Y-%m-%d:%I:%M:%S',
+#      filename=LOG_FILENAME,
+      level=logging.DEBUG)
+    
+    logging.warning("******************************************************************")
+    logging.warning("* (c) Christian Lohmann, 2015                                    *")
+    logging.warning("* FAH_WrapperGPUTrajectory                                       *")
+    logging.warning("******************************************************************")
+    logging.warning("")
+    
+    logging.info("start GPU wrapper on host %s port %d", hostnameWrapper, portWrapper)
+    logging.info("connecting to FAHClient on host %s port %d", hostnameClient, portClient)
+
+    sys.stdout.flush()
+
 #
 # sendFileThroughSocket
 # Parameter:	fn		Filename with full path
@@ -127,7 +161,7 @@ class Bond(object):
 # copy a file "as-is" trough the socket, in 1024 chunk of bytes
 #
 def sendFileThroughSocket(fn, s):
-	print tst,"Send filename", fn, "to", s.getsockname()
+	logging.info("send file %s to socket %s", fn, s.getsockname())
 	fh = open(fn,'rb') 		# open in read/binary
 	l = 1024
 	while (l == 1024):
@@ -238,19 +272,33 @@ def identifyCA():
 #
 # send the corrected atom data to the stream requested the trajectory
 #
+# radius taken from http://www.sciencegeek.net/tables/AtomicRadius.pdf
+#
 def sendCorrectAtomsData(st):
 
 	for atom in atomList:
 		if atom.number == 1: 
-		  l = "[\"" + atom.symbol + "\",0,1,0," + str(atom.number) +"],\n"
+		  l = "[\"" + atom.symbol + "\",0,0.31,0," + str(atom.number) +"],\n"
 		elif atom.number == 6: 
-		  l = "[\"" + atom.symbol + "\",0,4,0," + str(atom.number) +"],\n"
+		  l = "[\"" + atom.symbol + "\",0,0.76,0," + str(atom.number) +"],\n"
 		elif atom.number == 7: 
-		  l = "[\"" + atom.symbol + "\",0,5,0," + str(atom.number) +"],\n"
+		  l = "[\"" + atom.symbol + "\",0,0.71,0," + str(atom.number) +"],\n"
 		elif atom.number == 8: 
-		  l = "[\"" + atom.symbol + "\",0,6,0," + str(atom.number) +"],\n"
+		  l = "[\"" + atom.symbol + "\",0,0.66,0," + str(atom.number) +"],\n"
+		elif atom.number == 14: 
+		  # comes as UNKNOWN in some samples
+		  l = "[\"Si\",0,1.1,0," + str(atom.number) +"],\n"
+		elif atom.number == 16: 
+		  # comes as UNKNOWN in some samples
+		  l = "[\"S\",0,1.05,0," + str(atom.number) +"],\n"
+		elif atom.number == 22: 
+		  # comes as UNKNOWN in some samples
+		  l = "[\"Ti\",0,1.6,0," + str(atom.number) +"],\n"
+		elif atom.number == 35: 
+		  # comes as UNKNOWN in some samples
+		  l = "[\"Br\",0,1.2,0," + str(atom.number) +"],\n"
 		else: 
-		  l = "[\"" + atom.symbol + "\",0,7,0," + str(atom.number) +"],\n"
+		  l = "[\"" + atom.symbol + "\",0,1.0,0," + str(atom.number) +"],\n"
 		st.send(l)
 
 
@@ -336,12 +384,28 @@ def sendCorrectBondsData(st):
 # 
 def getTrajectory(st, wu):
 	parts = wu.split()
-	print tst,"Get trajectory for WU", parts[1]
-	pn = workingPath + parts[1] + "/01/"
-	pn = workingPath + "01" + "/01/"
 	
-	print "working files", pn
+	if parts[0] == "updates" and parts[1] == "add":
+		# a bit cheating now; we don't periodically perform it; but just once
+		slot = parts[5]
+	elif parts[0] == "trajectory":
+		slot = parts[1]
+	else:
+		logging.error("no valid trigger for trajectory %s", parts)
+		return
+		
+	slot = re.sub(r'[^\d]+', '', slot).zfill(2)
 
+	# get the slot/WU mapping done
+	WU = mapFSWU.get(slot, None)
+	if WU is None:
+		logging.error("no mapping done for slot %s\n%s", slot, mapFSWU)
+		return
+	
+	logging.info("get trajectory for slot %s with WU %s", slot, WU)
+	pn = workingPathLinux + WU + "/01/"
+	
+	logging.info("working folder %s", pn)
 	if not os.path.isfile(pn+"viewerFrame1.json"):
 		st.send("\nPyON 1 topology\n")
 		st.send("{\n")
@@ -349,7 +413,7 @@ def getTrajectory(st, wu):
 		st.send("\"bonds\": []\n")
 		st.send("}\n")
 		st.send("\n---")
-		print tst,"no position yet known, send empty data"
+		logging.error("no position yet known, send empty data")
 		return
 
 		
@@ -360,8 +424,8 @@ def getTrajectory(st, wu):
 	
 	identifyCA()
 	
-	print tst,"Number of atoms", len(atomList)
-	print tst,"Number of bonds", len(bondList)
+	logging.info("number of atoms %d", len(atomList))
+	logging.info("number of bonds %d", len(bondList))
 	
 	st.send("\nPyON 1 topology\n")
 	st.send("{\n")
@@ -378,12 +442,11 @@ def getTrajectory(st, wu):
 	# later we can build a loop here and copy all viewerFrame<n>.json files to 
 	# give the movements of the protein while folding
 	#
-	# just copy the viewerFrame1.json file here; structure fits; content is ok
-	#
-
-	st.send("\nPyON 1 positions\n")
-	sendFileThroughSocket(pn+"viewerFrame1.json", st)
-	st.send("\n---\n")
+	for posfile in glob.glob(pn+'*.json'):
+		# just copy the viewerFrame1.json file here; structure fits; content is ok
+		st.send("\nPyON 1 positions\n")
+		sendFileThroughSocket(posfile, st)
+		st.send("\n---\n")
 
 
 	#
@@ -398,16 +461,7 @@ def getTrajectory(st, wu):
 def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
 
     backlog = 5
-    size = 1024*8
-    
-    global ts
-    global tst
-    
-    ts = time.time()
-    tst = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-
-    print "\n\n(c) Christian Lohmann 2014-2015"
-    print "FAHMMWrapperGPUTrajectory running on host", hnW, ":", portWrapper, "and routing to", hnC,":",portClient, "\n"
+    size = 1024*16
     
     
 	#
@@ -434,11 +488,12 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
     output = []
     clientList = []
     
+
     input.append(sockClient)
     output.append(sockClient)
-	
-    print tst,"Trajectory server created socket ", sockTrajectory.getsockname()
-    print tst,"Trajectory client created socket ", sockClient.getsockname()
+    
+    logging.info("Trajectory server created with socket %s", sockTrajectory.getsockname())
+    logging.info("Trajectory client created with socket %s", sockClient.getsockname())
     
     cnt = 1
     running = 1
@@ -449,56 +504,70 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
         try:
             ready_to_read, ready_to_write, in_error = \
                   select.select(input, output, [])
-            #print cnt, ": entries in rq", len(ready_to_read), \
-            #                       " wq", len(ready_to_write), \
-            #                       "error", len(in_error)
+            #logging.debug("%d: entries in rq %d wq %d error %d", cnt, len(ready_to_read), \
+            #                       len(ready_to_write), \
+            #                       len(in_error)
         except IOError as e:
-            print tst,"select", e
-            if e.errno == 9:
-                break
+        	logging.error("select %s", e)
+        	if e.errno == 9:
+        		break
         except:
-            print tst,"select, unexpected error", sys.exc_info()[0]
-            print sys.exc_traceback.tb_lineno
-            raise
+        	logging.error("select, unexpected error %s", sys.exc_info()[0])
+        	logging.error("backtrace\n%s", sys.exc_traceback.tb_lineno)
+        	raise
 
         cnt = cnt + 1
 
         try:    
             for s in ready_to_read:
-            	
-            	# get actual timestamp
-            	ts = time.time()
-            	tst = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
                 if s is sockTrajectory:
-                    # print "trajectory socket", s.getsockname()
+                    # logging.debug("trajectory socket %s", s.getsockname())
                     # a new client want to connect
                     client, adress = sockTrajectory.accept()
                     if client is not None:
                         for c in clientList:
-                            print tst, "forced close active connection(s), only one client is allowed per host", c
-                            input.remove(c)
-                            clientList.remove(c)
-                            c.shutdown(socket.SHUT_RDWR)
-                            c.close()
+                        	logging.warning("forced close active connection(s), only one client is allowed per host %s", c)
+                        	input.remove(c)
+                        	clientList.remove(c)
+                        	c.shutdown(socket.SHUT_RDWR)
+                        	c.close()
                     
                         input.append(client)
                         clientList.append(client)
-                        print tst, "new connection for", adress, "established"	
+                        logging.warning("new connection for %s established", adress)	
                 elif s is sockClient:
-                   clientData = sockClient.recv(size)
-                   if clientData <> '':
-                     for c in clientList:
-                       print "response", clientData
-                       c.send(clientData)
+                	clientData = sockClient.recv(size)
+                	if clientData <> '':
+                		for c in clientList:
+                			#logging.info("response %s", clientData)
+                			c.send(clientData)
+                		
+                		# build the mapping table for slot/work units
+                		startTag = "PyON 1 units\n"
+                		startPos = clientData.find(startTag)
+                		if startPos >= 0:
+                			startPos = startPos + len(startTag)
+                			endPos = clientData.find("\n---", startPos)
+                		else:
+                			endPos = -1
+                		
+                		if startPos >= 0 and endPos >= startPos:
+                			infoText = clientData[startPos:endPos]
+	                		qi = json.loads(infoText)
+	                		
+	                		# get all slot/unit maps
+	                		for qia in qi:
+	                			mapFSWU[qia['slot']] = qia['id']
+
+	                		logging.info("map %s", mapFSWU)
+	                		
 
                 elif s is sys.stdin:
-                    # print "stdin"
-                    # close all client connections
                     junk = sys.stdin.readline()
                     while len(clientList) > 0:
                         c  = clientList[0]
-                        print "close connection by user, FAH client is gone", c
+                        logging.info("close connection by user, FAH client %s is gone", c)
                         input.remove(c)
                         clientList.remove(c)
                         c.shutdown(socket.SHUT_RDWR)
@@ -506,46 +575,53 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                     running = 0
                     break
                 else:
-                    # print "regular socket", s.getsockname()
+                    # logging.debug("regular socket %s", s.getsockname())
                     # read a data block
                     data = s.recv(size)
                     if data:
-                        # print tst,"received from", s, ":\n", data
+                        # logging.info("received from %s:\n%s", s, data)
                         sepline = data.splitlines(1)
                         for l in sepline:
-                           # print the command; without linebreak (is part of the command)
-                           # print tst,"command:", l,   
-                           # if l.startswith("auth"):    sockTrajectory.send(">OK\n")
-#                           elif l.startswith("info"):  sockTrajectory.send(l)
-                           if l.startswith("exit"):  running = 0
-#                           elif l.startswith("sleep"): sockTrajectory.send(l)
-                           elif l.startswith("traj"): getTrajectory(clientList[0], l) 
-                           elif l.startswith("trajectory"): getTrajectory(clientList[0], l) 
-                           elif "trajectory" in l: getTrajectory(clientList[0], l) 
-                           else: 
-                             print tst,"route", l
-                             sockClient.send(l)
+                        	# logging.debug("command: %s", l)   
+                        	# if l.startswith("auth"):    sockTrajectory.send(">OK\n")
+                        	# elif l.startswith("info"):  sockTrajectory.send(l)
+							if l.startswith("exit"):  running = 0
+							# elif l.startswith("sleep"): sockTrajectory.send(l)
+							elif l.startswith("traj"): getTrajectory(clientList[0], l) 
+							elif l.startswith("trajectory"): getTrajectory(clientList[0], l) 
+							elif "trajectory" in l:
+								# this one is to catch those trajectories within a scheduled event 
+								getTrajectory(clientList[0], l) 
+							else: 
+								logging.info("routing %s", l)
+								sockClient.send(l)
+								if l.find("heartbeat") >= 0:
+									sockClient.send("queue-info\n")
+
+									 
                     else:
-                        # print "end of stream, remove", s
+                        # logging.warning("end of stream %s, remove", s)
                         s.close()
                         clientList.remove(s)
                         input.remove(s)
         except IOError as e:
-            print e
+            logging.error("error %s", e)
             if e.errno == 9:
                 break
         except:
-            print "unexpected error", sys.exc_info()[0]
-            print sys.exc_traceback.tb_lineno
-            raise
+        	logging.error("unexpected error %s", sys.exc_info()[0])
+        	logging.error("backtrace\n%s", sys.exc_traceback.tb_lineno)
+        	raise
         sys.stdout.flush()
 
 
     sockTrajectory.close()
-    print "FAHMMWrapperGPUTrajectory server stopped running\n"
+    logging.warning("FAHMMWrapperGPUTrajectory server stopped running\n")
     
 
+if __name__ == '__main__':
+  printcopyrightandusage()
 
-ts = time.time()
-tst = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-FAHMM_Wrapper_GPU_Trajectory(hostnameWrapper, portWrapper, hostnameClient, portClient)
+  ts = time.time()
+  tst = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+  FAHMM_Wrapper_GPU_Trajectory(hostnameWrapper, portWrapper, hostnameClient, portClient)
