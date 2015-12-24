@@ -21,3 +21,7 @@ As result something like this should appear:
 ![FAH GPU trajectory](http://imageshack.com/a/img905/7480/JObdT1.png)
 
 Attention: right now not much more then a proof-of-concept ... still some work to be done ...
+
+And some rough architecture overview
+
+![Architecture](http://imageshack.us/a/img905/2458/cwsF06.jpg)
