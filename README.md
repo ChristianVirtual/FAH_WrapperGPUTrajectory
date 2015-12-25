@@ -15,7 +15,7 @@ Then on a remote machine (or the same) start the viewer
 
 ```FAHViewer --connect=\<wrapper_hostname\>:36331 --password=\<password\> --slot=1```
 
-As result something like this should appear:
+As result something like this should appear (best view seems if you choose '3' in the viewer)
 ![FAH GPU trajectory](http://imageshack.us/a/img910/339/w1sh5j.jpg)
 
 ![FAH GPU trajectory](http://imageshack.com/a/img905/7480/JObdT1.png)
