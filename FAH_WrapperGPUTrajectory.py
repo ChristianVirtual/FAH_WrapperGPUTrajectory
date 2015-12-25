@@ -97,6 +97,8 @@ workingPathWindows = "C:\\Users\\<user>\\AppData\\Roaming\\FAHClient\\work"
 atomList = []
 bondList = []
 
+atomCatalog = []
+
 mapFSWU = {}
 
 #
@@ -162,6 +164,7 @@ def printcopyrightandusage():
 # copy a file "as-is" trough the socket, in 1024 chunk of bytes
 #
 def sendFileThroughSocket(fn, s):
+    """ sendFileThroughSocket """
     #logging.info("send file %s to socket %s", fn, s.getsockname())
     fh = open(fn,'rb')      # open in read/binary
     l = 1024
@@ -172,6 +175,122 @@ def sendFileThroughSocket(fn, s):
 
     fh.close()
 
+#
+#
+def buildAtomRepository():
+    """ buildAtomRepository """
+    atomCatalog.append(Atom("X",  0.0, 1.50,   0.00,   0))
+    atomCatalog.append(Atom("H",  0.0, 1.20,   1.08,   1))
+    atomCatalog.append(Atom("He", 0.0, 1.40,   4.00,   2))
+    atomCatalog.append(Atom("Li", 0.0, 1.82,   6.94,   3))
+    atomCatalog.append(Atom("Be", 0.0, 2.00,   9.01,   4))
+    atomCatalog.append(Atom("B",  0.0, 2.00,  10.81,   5))
+    atomCatalog.append(Atom("C",  0.0, 1.70,  12.01,   6))
+    atomCatalog.append(Atom("N",  0.0, 1.55,  14.01,   7))
+    atomCatalog.append(Atom("O",  0.0, 1.52,  15.99,   8))
+    atomCatalog.append(Atom("F",  0.0, 1.47,  18.99,   9))
+    atomCatalog.append(Atom("Ne", 0.0, 1.54,  20.18,  10))
+    atomCatalog.append(Atom("Na", 0.0, 1.36,  22.99,  11))
+    atomCatalog.append(Atom("Mg", 0.0, 1.18,  24.31,  12))
+    atomCatalog.append(Atom("Al", 0.0, 2.00,  26.98,  13))
+    atomCatalog.append(Atom("Si", 0.0, 2.10,  28.09,  14))
+    atomCatalog.append(Atom("P" , 0.0, 1.80,  30.97,  15))
+    atomCatalog.append(Atom("S",  0.0, 1.80,  32.07,  16))
+    atomCatalog.append(Atom("Cl", 0.0, 2.27,  35.45,  17))
+    atomCatalog.append(Atom("Ar", 0.0, 1.88,  39.95,  18))
+    atomCatalog.append(Atom("K",  0.0, 1.76,  39.10,  19))
+    atomCatalog.append(Atom("Ca", 0.0, 1.37,  40.08,  20))
+    atomCatalog.append(Atom("Sc", 0.0, 2.00,  44.96,  21))
+    atomCatalog.append(Atom("Ti", 0.0, 2.00,  47.87,  22))
+    atomCatalog.append(Atom("V",  0.0, 2.00,  50.94,  23))
+    atomCatalog.append(Atom("Cr", 0.0, 2.00,  51.99,  24))
+    atomCatalog.append(Atom("Mn", 0.0, 2.00,  54.94,  25))
+    atomCatalog.append(Atom("Fe", 0.0, 2.00,  55.85,  26))
+    atomCatalog.append(Atom("Co", 0.0, 2.00,  58.93,  27))
+    atomCatalog.append(Atom("Ni", 0.0, 1.63,  58.69,  28))
+    atomCatalog.append(Atom("Cu", 0.0, 1.40,  63.55,  29))
+    atomCatalog.append(Atom("Zn", 0.0, 1.39,  65.41,  30))
+    atomCatalog.append(Atom("Ga", 0.0, 1.07,  69.72,  31))
+    atomCatalog.append(Atom("Ge", 0.0, 2.00,  72.64,  32))
+    atomCatalog.append(Atom("As", 0.0, 1.85,  74.92,  33))
+    atomCatalog.append(Atom("Se", 0.0, 1.90,  78.96,  34))
+    atomCatalog.append(Atom("Br", 0.0, 1.85,  79.90,  35))
+    atomCatalog.append(Atom("Kr", 0.0, 2.02,  83.79,  36))
+    atomCatalog.append(Atom("Rb", 0.0, 2.00,  85.47,  37))
+    atomCatalog.append(Atom("Sr", 0.0, 2.00,  87.62,  38))
+    atomCatalog.append(Atom("Y",  0.0, 2.00,  88.91,  39))
+    atomCatalog.append(Atom("Zr", 0.0, 2.00,  91.22,  40))
+    atomCatalog.append(Atom("Nb", 0.0, 2.00,  92.91,  41))
+    atomCatalog.append(Atom("Mo", 0.0, 2.00,  95.94,  42))
+    atomCatalog.append(Atom("Tc", 0.0, 2.00,  98.00,  43))
+    atomCatalog.append(Atom("Ru", 0.0, 2.00, 101.07,  44))
+    atomCatalog.append(Atom("Rh", 0.0, 2.00, 102.91,  45))
+    atomCatalog.append(Atom("Pd", 0.0, 1.63, 106.42,  46))
+    atomCatalog.append(Atom("Ag", 0.0, 1.72, 107.87,  47))
+    atomCatalog.append(Atom("Cd", 0.0, 1.58, 112.41,  48))
+    atomCatalog.append(Atom("In", 0.0, 1.93, 114.82,  49))
+    atomCatalog.append(Atom("Sn", 0.0, 2.17, 118.71,  50))
+    atomCatalog.append(Atom("Sb", 0.0, 2.00, 121.76,  51))
+    atomCatalog.append(Atom("Te", 0.0, 2.06, 127.60,  52))
+    atomCatalog.append(Atom("I",  0.0, 1.98, 126.90,  53))
+    atomCatalog.append(Atom("Xe", 0.0, 2.16, 131.29,  54))
+    atomCatalog.append(Atom("Cs", 0.0, 2.10, 132.91,  55))
+    atomCatalog.append(Atom("Ba", 0.0, 2.00, 137.38,  56))
+    atomCatalog.append(Atom("La", 0.0, 2.00, 138.91,  57))
+    atomCatalog.append(Atom("Ce", 0.0, 2.00, 140.12,  58))
+    atomCatalog.append(Atom("Pr", 0.0, 2.00, 140.91,  59))
+    atomCatalog.append(Atom("Nd", 0.0, 2.00, 144.24,  60))
+    atomCatalog.append(Atom("Pm", 0.0, 2.00, 145.00,  61))
+    atomCatalog.append(Atom("Sm", 0.0, 2.00, 150.36,  62))
+    atomCatalog.append(Atom("Eu", 0.0, 2.00, 151.96,  63))
+    atomCatalog.append(Atom("Gd", 0.0, 2.00, 157.25,  64))
+    atomCatalog.append(Atom("Tb", 0.0, 2.00, 158.93,  65))
+    atomCatalog.append(Atom("Dy", 0.0, 2.00, 162.50,  66))
+    atomCatalog.append(Atom("Ho", 0.0, 2.00, 164.93,  67))
+    atomCatalog.append(Atom("Er", 0.0, 2.00, 167.26,  68))
+    atomCatalog.append(Atom("Tm", 0.0, 2.00, 168.93,  69))
+    atomCatalog.append(Atom("Yb", 0.0, 2.00, 173.04,  70))
+    atomCatalog.append(Atom("Lu", 0.0, 2.00, 174.97,  71))
+    atomCatalog.append(Atom("Hf", 0.0, 2.00, 178.49,  72))
+    atomCatalog.append(Atom("Ta", 0.0, 2.00, 180.95,  73))
+    atomCatalog.append(Atom("W",  0.0, 2.00, 183.84,  74))
+    atomCatalog.append(Atom("Re", 0.0, 2.00, 186.21,  75))
+    atomCatalog.append(Atom("Os", 0.0, 2.00, 190.23,  76))
+    atomCatalog.append(Atom("Ir", 0.0, 2.00, 192.22,  77))
+    atomCatalog.append(Atom("Pt", 0.0, 1.72, 195.08,  78))
+    atomCatalog.append(Atom("Au", 0.0, 1.66, 196.97,  79))
+    atomCatalog.append(Atom("Hg", 0.0, 1.55, 200.59,  80))
+    atomCatalog.append(Atom("Tl", 0.0, 1.96, 204.38,  81))
+    atomCatalog.append(Atom("Pb", 0.0, 2.02, 207.20,  82))
+    atomCatalog.append(Atom("Bi", 0.0, 2.00, 208.98,  83))
+    atomCatalog.append(Atom("Po", 0.0, 2.00, 209.00,  84))
+    atomCatalog.append(Atom("At", 0.0, 2.00, 210.00,  85))
+    atomCatalog.append(Atom("Rn", 0.0, 2.00, 222.00,  86))
+    atomCatalog.append(Atom("Fr", 0.0, 2.00, 223.00,  87))
+    atomCatalog.append(Atom("Ra", 0.0, 2.00, 226.00,  88))
+    atomCatalog.append(Atom("Ac", 0.0, 2.00, 227.00,  89))
+    atomCatalog.append(Atom("Th", 0.0, 2.00, 232.04,  90))
+    atomCatalog.append(Atom("Pa", 0.0, 2.00, 231.04,  91))
+    atomCatalog.append(Atom("U",  0.0, 1.86, 238.03,  92))
+    atomCatalog.append(Atom("Np", 0.0, 2.00, 237.00,  93))
+    atomCatalog.append(Atom("Pu", 0.0, 2.00, 244.00,  94))
+    atomCatalog.append(Atom("Am", 0.0, 2.00, 243.00,  95))
+    atomCatalog.append(Atom("Cm", 0.0, 2.00, 247.00,  96))
+    atomCatalog.append(Atom("Bk", 0.0, 2.00, 247.00,  97))
+    atomCatalog.append(Atom("Cf", 0.0, 2.00, 251.00,  98))
+    atomCatalog.append(Atom("Es", 0.0, 2.00, 252.00,  99))
+    atomCatalog.append(Atom("Fm", 0.0, 2.00, 257.00, 100))
+    atomCatalog.append(Atom("Md", 0.0, 2.00, 258.00, 101))
+    atomCatalog.append(Atom("No", 0.0, 2.00, 259.00, 102))
+    atomCatalog.append(Atom("Lr", 0.0, 2.00, 262.00, 103))
+    atomCatalog.append(Atom("Rf", 0.0, 2.00, 261.00, 104))
+    atomCatalog.append(Atom("Db", 0.0, 2.00, 262.00, 105))
+    atomCatalog.append(Atom("Sg", 0.0, 2.00, 266.00, 106))
+    atomCatalog.append(Atom("Bh", 0.0, 2.00, 264.00, 107))
+    atomCatalog.append(Atom("Hs", 0.0, 2.00, 269.00, 108))
+    atomCatalog.append(Atom("Mt", 0.0, 2.00, 268.00, 109))
+    atomCatalog.append(Atom("Ds", 0.0, 2.00, 271.00, 110))
+    atomCatalog.append(Atom("Rg", 0.0, 2.00, 272.00, 111))
 
 #
 # getCorrectAtomsData
@@ -187,7 +306,18 @@ def getCorrectAtomsData(fn):
 
     # read all the atoms
     for atomLine in data["atoms"]:
+        atomTemp = atomCatalog[atomLine[4]]
         atom = Atom(atomLine[0], atomLine[1], atomLine[2], atomLine[3], atomLine[4])
+
+        if atom.symbol == "UNKNOWN":
+            atom.symbol = atomTemp.symbol
+        if atom.charge == 0:
+            atom.charge = atomTemp.charge
+        if atom.radius == 0:
+            atom.radius = atomTemp.radius
+        if atom.mass == 0:
+            atom.mass = atomTemp.mass
+
         atomList.append(atom)
 
     # ignore all the bonds
@@ -278,28 +408,7 @@ def sendCorrectAtomsData(st):
 
     sep = ""
     for atom in atomList:
-        if atom.number == 1:
-          l = sep + "[\"" + atom.symbol + "\",0,1.2,0," + str(atom.number) +"]\n"
-        elif atom.number == 6:
-          l = sep + "[\"" + atom.symbol + "\",0,1.9,0," + str(atom.number) +"]\n"
-        elif atom.number == 7:
-          l = sep + "[\"" + atom.symbol + "\",0,1.7,0," + str(atom.number) +"]\n"
-        elif atom.number == 8:
-          l = sep + "[\"" + atom.symbol + "\",0,1.5,0," + str(atom.number) +"]\n"
-        elif atom.number == 14:
-          l = sep + "[\"Si\",0,1.1,0," + str(atom.number) +"]\n"
-        elif atom.number == 16:
-          l = sep + "[\"S\",0,1.05,0," + str(atom.number) +"]\n"
-        elif atom.number == 22:
-          l = sep + "[\"Ti\",0,1.6,0," + str(atom.number) +"]\n"
-        elif atom.number == 24:
-          l = sep + "[\"Cr\",0,1.6,0," + str(atom.number) +"]\n"
-        elif atom.number == 30:
-          l = sep + "[\"Zn\",0,1.6,0," + str(atom.number) +"]\n"
-        elif atom.number == 35:
-          l = sep + "[\"Br\",0,1.2,0," + str(atom.number) +"]\n"
-        else:
-          l = sep + "[\"" + atom.symbol + "\",0,1.0,0," + str(atom.number) +"]\n"
+        l = sep + "[\"" + atom.symbol + "\","+ str(atom.charge) +","+ str(atom.radius) +","+ str(atom.mass) +"," + str(atom.number) +"]\n"
         st.send(l)
         sep = ","
 
@@ -631,7 +740,5 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
 
 if __name__ == '__main__':
   printcopyrightandusage()
-
-  ts = time.time()
-  tst = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+  buildAtomRepository()
   FAHMM_Wrapper_GPU_Trajectory(hostnameWrapper, portWrapper, hostnameClient, portClient)
