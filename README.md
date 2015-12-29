@@ -14,7 +14,7 @@ start the script with (tested with Python 2.7 and 3.4)
 ```python FAH_WrapperGPUTrajectory.py```  - or - 
 ```python3.4 FAH_WrapperGPUTrajectory.py```   
 
-Then on a remote machine (or the same) start the viewer
+Then on a remote machine (or the same) start the viewer; please don't enter localhost:36331 as connection for the viewer; that might case trouble (Thank Davidcoton for pointing that out) 
 
 ```FAHViewer --connect=<wrapper_hostname>:36331 --password=<password> --slot=1```
 
