@@ -95,8 +95,8 @@ portWrapper = 36331
 hostnameClient = "localhost"
 portClient = 36330
 
-# the working path (no need to change; will be read from config settings later)
-workingPath = "/var/lib/fahclient/work/"
+# the working path (will be read from config settings later)
+workingPath = ""
 
 atomList = []
 bondList = []
@@ -500,6 +500,8 @@ def sendCorrectBondsData(st):
 def getTrajectory(st, wu):
     parts = wu.split()
 
+    logging.warn("get trajectory")
+
     if parts[0] == "updates" and parts[1] == "add":
         # a bit cheating now; we don't periodically perform it; but just once
         slot = parts[5]
@@ -518,7 +520,7 @@ def getTrajectory(st, wu):
         return
 
     logging.info("get trajectory for slot %s with WU %s", slot, WU)
-    pn = os.path.join(workingPath, WU, "01")
+    pn = os.path.join(workingPath, "work", WU, "01")
 
 
     logging.info("working folder %s", pn)
@@ -587,6 +589,7 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
     backlog = 5
     size = 1024*16
 
+    global workingPath
 
     #
     # establish as trajectory server on the given host and port
@@ -688,8 +691,6 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                                 mapFSWU[qia['slot']] = qia['id']
 
                             logging.info("map %s", mapFSWU)
-                            # and trigger a folder determination
-                            sockClient.send("info\n".encode())
 
                         #
                         # build the mapping table for slot/work units
@@ -747,6 +748,9 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                                 #logging.info("routing %s", l)
                                 sockClient.send(l.encode())
                                 if l.find("heartbeat") >= 0:
+                                    # trigger a folder determination
+                                    if workingPath == '':
+                                        sockClient.send("info\n".encode())
                                     sockClient.send("queue-info\n".encode())
 
 
