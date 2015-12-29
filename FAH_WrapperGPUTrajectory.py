@@ -29,6 +29,9 @@
 #                       issue #4: only one frame with positions is send back
 #                       issue #5: radius of atoms are not set correctly
 #                       additional: replace prints with proper logging to increase version independance
+# 2015/12/29    1.4     Fix the Python 3.4 incompatibility
+#                       improve error handler for pressing Control-C to terminate
+#                       learn the data path from settings
 #
 #
 
@@ -61,6 +64,7 @@ import json
 import os.path
 import logging
 import glob
+import platform
 
 #
 # Adopt here the path pointing to your working directory from FAHClient
@@ -89,10 +93,8 @@ portWrapper = 36331
 hostnameClient = "linuxpowered"
 portClient = 36330
 
-workingPathLinux = "/var/lib/fahclient/work/"
-
-userNameWindows = ""
-workingPathWindows = "C:\\Users\\<user>\\AppData\\Roaming\\FAHClient\\work"
+# the working path (no need to change; will be read from config settings later)
+workingPath = "/var/lib/fahclient/work/"
 
 atomList = []
 bondList = []
@@ -135,9 +137,6 @@ class Bond(object):
 def printcopyrightandusage():
     """ (c) Christian Lohmann, 2015, FAH_WrapperGPUTrajectory"""
 
-    print("(c) Christian Lohmann 2015")
-    print("FAH_WrapperGPUTrajectory")
-
     LOG_FILENAME = 'fah_wrapgpu.log'
 
     logging.basicConfig(format='%(asctime)s:%(message)s', datefmt='%Y-%m-%d:%I:%M:%S',
@@ -149,6 +148,7 @@ def printcopyrightandusage():
     logging.warning("* FAH_WrapperGPUTrajectory                                       *")
     logging.warning("******************************************************************")
     logging.warning("")
+    logging.warning("running Python %s", platform.python_version())
 
     logging.info("start GPU wrapper on host %s port %d", hostnameWrapper, portWrapper)
     logging.info("connecting to FAHClient on host %s port %d", hostnameClient, portClient)
@@ -321,7 +321,7 @@ def getCorrectAtomsData(fn):
         atomList.append(atom)
 
     # ignore all the bonds
-#   for atomLine in data["bonds"]:
+    # for atomLine in data["bonds"]:
 
     json_data.close()
 
@@ -338,6 +338,8 @@ def getCorrectAtomsData(fn):
 # C: 6
 # N: 7
 # O: 8
+#
+# Proline makes a problem with this logic; but we don't need it anyway too much here, so keep it for later
 #
 def identifyCA():
     for bond in bondList:
@@ -409,7 +411,7 @@ def sendCorrectAtomsData(st):
     sep = ""
     for atom in atomList:
         l = sep + "[\"" + atom.symbol + "\","+ str(atom.charge) +","+ str(atom.radius) +","+ str(atom.mass) +"," + str(atom.number) +"]\n"
-        st.send(l)
+        st.send(l.encode())
         sep = ","
 
 
@@ -477,11 +479,11 @@ def sendCorrectBondsData(st):
     # get all remaining bonds out into the stream
     for bond in bondList:
         l = "[" + str(bond.atom1) + "," + str(bond.atom2) + "],"
-        st.send(l)
+        st.send(l.encode())
 
     # get the remove last bonds out into the stream; just without colon
     l = "[" + str(bondLast.atom1) + "," + str(bondLast.atom2) + "]"
-    st.send(l)
+    st.send(l.encode())
 
 
 #
@@ -514,60 +516,61 @@ def getTrajectory(st, wu):
         return
 
     logging.info("get trajectory for slot %s with WU %s", slot, WU)
-    pn = workingPathLinux + WU + "/01/"
+    pn = os.path.join(workingPath, WU, "01")
+
 
     logging.info("working folder %s", pn)
-    if not os.path.isfile(pn+"viewerFrame1.json"):
-        st.send("\nPyON 1 topology\n")
-        st.send("{\n")
-        st.send("\"atoms\": [],\n")
-        st.send("\"bonds\": []\n")
-        st.send("}\n")
-        st.send("\n---")
+    if not os.path.isfile(os.path.join(pn, "viewerFrame1.json")):
+        st.send("\nPyON 1 topology\n".encode())
+        st.send("{\n".encode())
+        st.send("\"atoms\": [],\n".encode())
+        st.send("\"bonds\": []\n".encode())
+        st.send("}\n".encode())
+        st.send("\n---".encode())
         logging.error("no position yet known, send empty data")
         return
 
 
 
-    getCorrectAtomsData(pn+"viewerTop.json")
+    getCorrectAtomsData(os.path.join(pn, "viewerTop.json"))
     maxIndex = len(atomList)
-    getCorrectBondsData(pn+"system.xml", maxIndex)
+    getCorrectBondsData(os.path.join(pn, "system.xml"), maxIndex)
 
     identifyCA()
 
     logging.info("number of atoms %d", len(atomList))
     logging.info("number of bonds %d", len(bondList))
 
-    st.send("\nPyON 1 topology\n")
-    st.send("{\n")
-    st.send("\"atoms\": [\n")
+    st.send("\nPyON 1 topology\n".encode())
+    st.send("{\n".encode())
+    st.send("\"atoms\": [\n".encode())
     sendCorrectAtomsData(st)
-    st.send("\n],\n")
-    st.send("\"bonds\": [")
+    st.send("\n],\n".encode())
+    st.send("\"bonds\": [".encode())
     sendCorrectBondsData(st)
-    st.send("]\n")
-    st.send("}\n")
-    st.send("\n---")
+    st.send("]\n".encode())
+    st.send("}\n".encode())
+    st.send("\n---".encode())
 
     #
     # loop over all files we have with position information
     #
     # oh man, I'm too lazy for this and ask for the files in two steps
     # 1) for those with only 1 digit
-    fa = sorted(glob.glob(pn+'viewerFrame?.json'))
+    fa = sorted(glob.glob(os.path.join(pn, 'viewerFrame?.json')))
     for posfile in fa:
         # just copy the viewerFrame[n].json file here; structure fits; content is ok
-        st.send("\nPyON 1 positions\n")
+        st.send("\nPyON 1 positions\n".encode())
         sendFileThroughSocket(posfile, st)
-        st.send("\n---\n")
+        st.send("\n---\n".encode())
 
     # 2) for those with two digits
-    fa = sorted(glob.glob(pn+'viewerFrame??.json'))
+    fa = sorted(glob.glob(os.path.join(pn, 'viewerFrame??.json')))
     for posfile in fa:
         # just copy the viewerFrame[n].json file here; structure fits; content is ok
-        st.send("\nPyON 1 positions\n")
+        st.send("\nPyON 1 positions\n".encode())
         sendFileThroughSocket(posfile, st)
-        st.send("\n---\n")
+        st.send("\n---\n".encode())
 
 
     # cleanup to avoid double sending with next request
@@ -630,6 +633,9 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
             logging.error("select %s", e)
             if e.errno == 9:
                 break
+        except (KeyboardInterrupt, SystemExit):
+            logging.error("wrapper to end as per keyboard or signal")
+            running = 0
         except:
             logging.error("select, unexpected error %s", sys.exc_info()[0])
             logging.error("backtrace\n%s", sys.exc_traceback.tb_lineno)
@@ -656,11 +662,11 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                         clientList.append(client)
                         logging.warning("new connection for %s established", adress)
                 elif s is sockClient:
-                    clientData = sockClient.recv(size)
+                    clientData = sockClient.recv(size).decode()
                     if len(clientData) > 0:
                         for c in clientList:
                             #logging.info("response %s", clientData)
-                            c.send(clientData)
+                            c.send(clientData.encode())
 
                         # build the mapping table for slot/work units
                         startTag = "PyON 1 units\n"
@@ -680,7 +686,31 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                                 mapFSWU[qia['slot']] = qia['id']
 
                             logging.info("map %s", mapFSWU)
+                            # and trigger a folder determination
+                            sockClient.send("info\n".encode())
 
+                        #
+                        # build the mapping table for slot/work units
+                        startTag = "PyON 1 info\n"
+                        startPos = clientData.find(startTag)
+                        if startPos >= 0:
+                            startPos = startPos + len(startTag)
+                            endPos = clientData.find("\n---", startPos)
+                        else:
+                            endPos = -1
+
+                        if startPos >= 0 and endPos >= startPos:
+                            infoText = clientData[startPos:endPos]
+                            qi = json.loads(infoText)
+
+                            # get the "System" part of the list
+                            for qis in qi:
+                                qin = qis.pop(0)
+                                if qin == "System":
+                                    for qit in qis:
+                                        if qit[0] == "CWD":
+                                            workingPath = qit[1]
+                                            logging.info("working folder from config %s", workingPath)
 
                 elif s is sys.stdin:
                     junk = sys.stdin.readline()
@@ -696,7 +726,7 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                 else:
                     # logging.debug("regular socket %s", s.getsockname())
                     # read a data block
-                    data = s.recv(size)
+                    data = s.recv(size).decode()
                     if data:
                         # logging.info("received from %s:\n%s", s, data)
                         sepline = data.splitlines(1)
@@ -713,9 +743,9 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                                 getTrajectory(clientList[0], l)
                             else:
                                 logging.info("routing %s", l)
-                                sockClient.send(l)
+                                sockClient.send(l.encode())
                                 if l.find("heartbeat") >= 0:
-                                    sockClient.send("queue-info\n")
+                                    sockClient.send("queue-info\n".encode())
 
 
                     else:
@@ -733,6 +763,12 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
             raise
         sys.stdout.flush()
 
+    for c in clientList:
+        logging.warning("close active connection with host %s", c)
+        input.remove(c)
+        clientList.remove(c)
+        c.shutdown(socket.SHUT_RDWR)
+        c.close()
 
     sockTrajectory.close()
     logging.warning("FAHMMWrapperGPUTrajectory server stopped running\n")
