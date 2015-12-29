@@ -29,9 +29,10 @@
 #                       issue #4: only one frame with positions is send back
 #                       issue #5: radius of atoms are not set correctly
 #                       additional: replace prints with proper logging to increase version independance
-# 2015/12/29    1.4     Fix the Python 3.4 incompatibility
+# 2015/12/29    2.0     Fix the Python 3.4 incompatibility
 #                       improve error handler for pressing Control-C to terminate
 #                       learn the data path from settings
+#                       get the hostname from sockets
 #
 #
 
@@ -145,7 +146,7 @@ def printcopyrightandusage():
 
     logging.warning("******************************************************************")
     logging.warning("* (c) Christian Lohmann, 2015                                    *")
-    logging.warning("* FAH_WrapperGPUTrajectory                                       *")
+    logging.warning("* FAH_WrapperGPUTrajectory v2.0                                  *")
     logging.warning("******************************************************************")
     logging.warning("")
     logging.warning("running Python %s", platform.python_version())
