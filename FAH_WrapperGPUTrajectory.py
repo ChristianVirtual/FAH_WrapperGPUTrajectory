@@ -33,6 +33,7 @@
 #                       improve error handler for pressing Control-C to terminate
 #                       learn the data path from settings
 #                       get the hostname from sockets
+# 2015/12/29    2.1     remove logging for routing commands (mainly to avoid leakage of auth-password)
 #
 #
 
@@ -91,7 +92,7 @@ hostnameWrapper = ""
 portWrapper = 36331
 
 # where the FAHClient is running
-hostnameClient = ""
+hostnameClient = "localhost"
 portClient = 36330
 
 # the working path (no need to change; will be read from config settings later)
@@ -146,7 +147,7 @@ def printcopyrightandusage():
 
     logging.warning("******************************************************************")
     logging.warning("* (c) Christian Lohmann, 2015                                    *")
-    logging.warning("* FAH_WrapperGPUTrajectory v2.0                                  *")
+    logging.warning("* FAH_WrapperGPUTrajectory v2.1                                  *")
     logging.warning("******************************************************************")
     logging.warning("")
     logging.warning("running Python %s", platform.python_version())
@@ -743,7 +744,7 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                                 # this one is to catch those trajectories within a scheduled event
                                 getTrajectory(clientList[0], l)
                             else:
-                                logging.info("routing %s", l)
+                                #logging.info("routing %s", l)
                                 sockClient.send(l.encode())
                                 if l.find("heartbeat") >= 0:
                                     sockClient.send("queue-info\n".encode())
@@ -776,8 +777,11 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
 
 
 if __name__ == '__main__':
-  hostnameWrapper = socket.gethostname()
-  hostnameClient = socket.gethostname()
+
+  if hostnameWrapper == '':
+    hostnameWrapper = socket.gethostname()
+  if hostnameClient == '':
+    hostnameClient = socket.gethostname()
 
   printcopyrightandusage()
   buildAtomRepository()
