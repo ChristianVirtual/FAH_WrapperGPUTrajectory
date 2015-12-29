@@ -1,11 +1,13 @@
 # FAH_WrapperGPUTrajectory
 
-Please modify the source file with the hostnames
+With new version 2.0 the hostname will be determined from the socket interface via gethostname(); in case of trouble you still can define the hostnames in the source (but should not be needed)
 
-1. where the wrapper is running
-2. where the FAHClient is running
+~~Please modify the source file with the hostnames~~
 
-Those both hostnames for the time beeing need to be the same !
+~~1. where the wrapper is running~~
+~~2. where the FAHClient is running~~
+
+~~Those both hostnames for the time beeing need to be the same !~~
 
 start the script with (tested with Python 2.7 and 3.4)
 
