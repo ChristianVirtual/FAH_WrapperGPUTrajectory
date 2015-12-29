@@ -81,16 +81,16 @@ import platform
 #
 # right now this wrapper need to run on the same machine as the FAHClient as we need to access the files directly.
 # The viewer can be on a remote machine and started like this
-# FAHViewer --connect=linuxpowered:36331 --password=<password> --slot=1
+# FAHViewer --connect=<hostname>:36331 --password=<password> --slot=1
 #
 #
 
 # where this wrapper is running
-hostnameWrapper = "linuxpowered"
+hostnameWrapper = ""
 portWrapper = 36331
 
 # where the FAHClient is running
-hostnameClient = "linuxpowered"
+hostnameClient = ""
 portClient = 36330
 
 # the working path (no need to change; will be read from config settings later)
@@ -775,6 +775,11 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
 
 
 if __name__ == '__main__':
+  hostnameWrapper = socket.gethostname()
+  hostnameClient = socket.gethostname()
+
   printcopyrightandusage()
   buildAtomRepository()
+
+
   FAHMM_Wrapper_GPU_Trajectory(hostnameWrapper, portWrapper, hostnameClient, portClient)
