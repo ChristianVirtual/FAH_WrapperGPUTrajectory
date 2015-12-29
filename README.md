@@ -7,9 +7,9 @@ Please modify the source file with the hostnames
 
 Those both hostnames for the time beeing need to be the same !
 
-start the script with
-```python FAH_WrapperGPUTrajectory.py```
-
+start the script with (tested with Python 2.7 and 3.4)
+```python FAH_WrapperGPUTrajectory.py```  - or - 
+```python3.4 FAH_WrapperGPUTrajectory.py```   
 
 Then on a remote machine (or the same) start the viewer
 
