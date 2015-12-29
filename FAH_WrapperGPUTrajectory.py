@@ -34,6 +34,8 @@
 #                       learn the data path from settings
 #                       get the hostname from sockets
 # 2015/12/29    2.1     remove logging for routing commands (mainly to avoid leakage of auth-password)
+# 2015/12/29    2.2     make the path-handling more robust (thanks to Davidcoton for testing !)
+#
 #
 #
 
@@ -147,7 +149,7 @@ def printcopyrightandusage():
 
     logging.warning("******************************************************************")
     logging.warning("* (c) Christian Lohmann, 2015                                    *")
-    logging.warning("* FAH_WrapperGPUTrajectory v2.1                                  *")
+    logging.warning("* FAH_WrapperGPUTrajectory v2.2                                  *")
     logging.warning("******************************************************************")
     logging.warning("")
     logging.warning("running Python %s", platform.python_version())
