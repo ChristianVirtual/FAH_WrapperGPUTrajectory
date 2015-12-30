@@ -35,7 +35,8 @@
 #                       get the hostname from sockets
 # 2015/12/29    2.1     remove logging for routing commands (mainly to avoid leakage of auth-password)
 # 2015/12/29    2.2     make the path-handling more robust (thanks to Davidcoton for testing !)
-#
+# 2015/12/30    2.3     remove a memory leak in "getTrajectory"; the atomList within atoms was not released
+#                       The memory leak in 2.7 was worst then 3.4; but both leaked
 #
 #
 
@@ -69,6 +70,7 @@ import os.path
 import logging
 import glob
 import platform
+import gc
 
 #
 # Adopt here the path pointing to your working directory from FAHClient
@@ -153,11 +155,13 @@ def printcopyrightandusage():
     logging.warning("******************************************************************")
     logging.warning("")
     logging.warning("running Python %s", platform.python_version())
+    logging.warning("")
 
     logging.info("start GPU wrapper on host %s port %d", hostnameWrapper, portWrapper)
     logging.info("connecting to FAHClient on host %s port %d", hostnameClient, portClient)
 
     sys.stdout.flush()
+
 
 
 #
@@ -304,14 +308,20 @@ def buildAtomRepository():
 # Of main interest are the symbols, radius and number; to bad radius is not prodvided
 #
 def getCorrectAtomsData(fn):
+
     json_data = open(fn, 'r')
     data = json.load(json_data)
     global atomList
 
+    cnt = 0
     # read all the atoms
     for atomLine in data["atoms"]:
         atomTemp = atomCatalog[atomLine[4]]
         atom = Atom(atomLine[0], atomLine[1], atomLine[2], atomLine[3], atomLine[4])
+
+        cnt = cnt + 1
+        if (cnt % 1000) == 0:
+            logging.info("reading atoms %i", cnt)
 
         if atom.symbol == "UNKNOWN":
             atom.symbol = atomTemp.symbol
@@ -328,6 +338,7 @@ def getCorrectAtomsData(fn):
     # for atomLine in data["bonds"]:
 
     json_data.close()
+
 
 #
 # identifyCA
@@ -346,6 +357,8 @@ def getCorrectAtomsData(fn):
 # Proline makes a problem with this logic; but we don't need it anyway too much here, so keep it for later
 #
 def identifyCA():
+
+    logging.info("analyse backbone a bit")
     for bond in bondList:
 
         atom1 = atomList[bond.atom1]
@@ -428,42 +441,34 @@ def sendCorrectAtomsData(st):
 # As the bonds/constraints also contain all the water and other atom we have the count of
 # atoms serving as threshold to ignore those non-protein atoms
 #
+#
 def getCorrectBondsData(fn, maxindex):
-    data = ET.parse(fn)
-    root = data.getroot()
 
     #
-    # loop over the constraints
+    # different way to parse the XML file
     #
-    for bond in root.iter('Constraint'):
-        p1 = int(bond.get('p1'))
-        p2 = int(bond.get('p2'))
-        if (p1 < maxindex and p2 < maxindex):
-            bond = Bond(p1, p2)
-            bondList.append(bond)
+    doc = ET.iterparse(fn, events=("start", "end"))
 
-            atom1 = atomList[p1]
-            atom2 = atomList[p2]
-            atom1.atomList.append(atom2)
-            atom2.atomList.append(atom1)
+    cnt = 0
+    for action, elem in doc:
+        if action == "start":
+            if (elem.tag == "Constraint") or (elem.tag == "Bond"):
+                p1 = int(elem.get('p1', maxindex))
+                p2 = int(elem.get('p2', maxindex))
+                if (p1 < maxindex and p2 < maxindex):
+                    bond = Bond(p1, p2)
+                    bondList.append(bond)
+                    cnt = cnt + 1
+                    if (cnt % 1000) == 0:
+                        logging.info("reading bonds %i", cnt)
+                    atom1 = atomList[p1]
+                    atom2 = atomList[p2]
+                    atom1.atomList.append(atom2)
+                    atom2.atomList.append(atom1)
+        elem.clear()
 
-    #
-    # loop over the bonds
-    #
-    for bond in root.iter('Bond'):
-        p1 = int(bond.get('p1'))
-        p2 = int(bond.get('p2'))
-        if (p1 < maxindex and p2 < maxindex):
-            bond = Bond(p1, p2)
-            bondList.append(bond)
+    del doc
 
-            atom1 = atomList[p1]
-            atom2 = atomList[p2]
-            atom1.atomList.append(atom2)
-            atom2.atomList.append(atom1)
-
-    data = []
-    root = []
 
 
 #
@@ -490,6 +495,7 @@ def sendCorrectBondsData(st):
     st.send(l.encode())
 
 
+
 #
 # getTrajectory(st, wu)
 # Parameter:    st      Stream requesting the trajectory
@@ -502,7 +508,12 @@ def sendCorrectBondsData(st):
 def getTrajectory(st, wu):
     parts = wu.split()
 
-    logging.warn("get trajectory")
+    #gc.enable()
+
+    if gc.isenabled():
+        gcCntStart = gc.get_count()
+    #logging.warn("get trajectory, gc objects at start: %d", gcCntStart)
+
 
     if parts[0] == "updates" and parts[1] == "add":
         # a bit cheating now; we don't periodically perform it; but just once
@@ -578,15 +589,33 @@ def getTrajectory(st, wu):
         sendFileThroughSocket(posfile, st)
         st.send("\n---\n".encode())
 
+    logging.info("Send trajectory to viewer")
 
     # cleanup to avoid double sending with next request
-    del atomList[:]
+
+    # cleanup the bond-atom reference first and complete
+    for a in atomList:
+        del a.symbol
+        del a.atomList[:]
+
     del bondList[:]
+    del atomList[:]
     del fa
 
+    if gc.isenabled():
+        gcCntEnd = gc.get_count()
+        if gcCntEnd[0] > gcCntStart[0]:
+            #for i in gc.get_objects():
+            #    print(i)
+            logging.warn("Warning, potentially memory leak, objects %d", gcCntEnd[0] - gcCntStart[0])
+
+    if gc.isenabled():
+        gc.disable()
 
 
 def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
+
+    gc.set_debug(gc.DEBUG_LEAK)
 
     backlog = 5
     size = 1024*16
@@ -692,6 +721,7 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                             for qia in qi:
                                 mapFSWU[qia['slot']] = qia['id']
 
+                            del qi
                             logging.info("map %s", mapFSWU)
 
                         #
@@ -716,6 +746,8 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
                                         if qit[0] == "CWD":
                                             workingPath = qit[1]
                                             logging.info("working folder from config %s", workingPath)
+                            del qi
+                            del infoText
 
                 elif s is sys.stdin:
                     junk = sys.stdin.readline()
@@ -779,6 +811,13 @@ def FAHMM_Wrapper_GPU_Trajectory(hnW, portWrapper, hnC, portClient):
         c.close()
 
     sockTrajectory.close()
+
+    global atomList
+
+    for a in atomCatalog:
+        del a.atomList[:]
+    del atomCatalog
+
     logging.warning("FAHMMWrapperGPUTrajectory server stopped running\n")
 
 
