@@ -1,5 +1,10 @@
 # FAH_WrapperGPUTrajectory
 
+
+Caution: watch the memory consumption of bigger GPU trajectories. Working on the removal of a memory leak (see different branch with changes); but it is also recommended to run FAHViewer on a connected system to give the running FAH software the resources it needs.
+
+
+
 With new version 2.0 the hostname will be determined from the socket interface via gethostname(); in case of trouble you still can define the hostnames in the source (but should not be needed)
 
 ~~Please modify the source file with the hostnames~~
