@@ -1,5 +1,10 @@
 # FAH_WrapperGPUTrajectory
 
+
+Caution: watch the memory consumption of bigger GPU trajectories. Working on the removal of a memory leak (see different branch with changes); but it is also recommended to run FAHViewer on a connected system to give the running FAH software the resources it needs.
+
+
+
 With new version 2.0 the hostname will be determined from the socket interface via gethostname(); in case of trouble you still can define the hostnames in the source (but should not be needed)
 
 ~~Please modify the source file with the hostnames~~
@@ -14,7 +19,7 @@ start the script with (tested with Python 2.7 and 3.4)
 ```python FAH_WrapperGPUTrajectory.py```  - or - 
 ```python3.4 FAH_WrapperGPUTrajectory.py```   
 
-Then on a remote machine (or the same) start the viewer
+Then on a remote machine (or the same) start the viewer; please don't enter localhost:36331 as connection for the viewer; that might case trouble (Thanks Davidcoton for pointing that out) 
 
 ```FAHViewer --connect=<wrapper_hostname>:36331 --password=<password> --slot=1```
 
