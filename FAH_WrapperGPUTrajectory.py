@@ -502,7 +502,7 @@ def sendCorrectBondsData(st):
 def getTrajectory(st, wu):
     parts = wu.split()
 
-    logging.warn("get trajectory")
+    logging.warning("get trajectory")
 
     if parts[0] == "updates" and parts[1] == "add":
         # a bit cheating now; we don't periodically perform it; but just once

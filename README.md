@@ -1,6 +1,8 @@
 # FAH_WrapperGPUTrajectory
 
 
+## All credit to @ChristianVirtual and his original repository at https://github.com/ChristianVirtual/FAH_WrapperGPUTrajectory.
+
 Caution: watch the memory consumption of bigger GPU trajectories. Working on the removal of a memory leak (see different branch with changes); but it is also recommended to run FAHViewer on a connected system to give the running FAH software the resources it needs.
 
 
